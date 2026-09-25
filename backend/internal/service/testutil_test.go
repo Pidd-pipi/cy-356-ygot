@@ -10,6 +10,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 
+	"github.com/communitygarden/server/internal/dto"
 	"github.com/communitygarden/server/internal/model"
 	"github.com/communitygarden/server/internal/repository"
 )
@@ -32,7 +33,7 @@ func newTestServiceDB(t *testing.T) *gorm.DB {
 		t.Fatalf("open test db: %v", err)
 	}
 	if err := db.AutoMigrate(
-		&model.User{}, &model.Plot{}, &model.PlantingPlan{}, &model.HarvestRecord{},
+		&model.User{}, &model.Plot{}, &model.AdoptionApplication{}, &model.PlantingPlan{}, &model.HarvestRecord{},
 		&model.DiaryEntry{}, &model.DiaryComment{}, &model.CommunityPost{}, &model.CommunityComment{},
 		&model.AuditLog{},
 	); err != nil {
@@ -74,4 +75,18 @@ func newPlotService(t *testing.T, db *gorm.DB) (*PlotService, repository.PlotRep
 	plotRepo := repository.NewPlotRepository(db)
 	svc := NewPlotService(plotRepo, db, testLogger())
 	return svc, plotRepo
+}
+
+// adoptPlotViaReview 通过“提交申请 + 管理员批准”的审核流程让地块被用户认养（测试辅助）。
+func adoptPlotViaReview(t *testing.T, db *gorm.DB, plot *model.Plot, user *model.User) {
+	t.Helper()
+	admin := newTestUser(t, db, "admin-"+plot.Code+"-"+user.Username, "admin")
+	svc := NewAdoptionApplicationService(repository.NewAdoptionApplicationRepository(db), repository.NewPlotRepository(db), db, testLogger())
+	app, err := svc.Apply(&dto.CreateAdoptionApplicationRequest{PlotID: plot.ID, Message: "测试认养申请留言"}, user.ID)
+	if err != nil {
+		t.Fatalf("apply adoption: %v", err)
+	}
+	if _, err := svc.Review(app.ID, admin.ID, admin.Username, &dto.ReviewAdoptionApplicationRequest{Action: "approve"}); err != nil {
+		t.Fatalf("review approve: %v", err)
+	}
 }

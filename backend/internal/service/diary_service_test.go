@@ -16,9 +16,7 @@ func TestDiaryService_CreateLikeComment(t *testing.T) {
 	user := newTestUser(t, db, "farmer", "farmer")
 	plot := newTestPlot(t, db, "P-DIARY", "available", nil)
 	plotSvc, _ := newPlotService(t, db)
-	if _, err := plotSvc.Adopt(plot.ID, user.ID, "farmer", "farmer"); err != nil {
-		t.Fatalf("adopt: %v", err)
-	}
+	adoptPlotViaReview(t, db, plot, user)
 	planSvc := NewPlantingPlanService(planRepo, repository.NewPlotRepository(db), plotSvc, db, testLogger())
 	plan, err := planSvc.Create(&dto.CreatePlanRequest{PlotID: plot.ID, CropName: "生菜", CropType: "vegetable", Season: "spring"}, user.ID)
 	if err != nil {

@@ -60,6 +60,7 @@ func main() {
 	diaryRepo := repository.NewDiaryRepository(db)
 	postRepo := repository.NewCommunityRepository(db)
 	auditRepo := repository.NewAuditRepository(db)
+	adoptionRepo := repository.NewAdoptionApplicationRepository(db)
 
 	// 服务
 	authService := service.NewAuthService(userRepo, logger, cfg.JWTSecret, cfg.JWTExpireHours)
@@ -71,6 +72,7 @@ func main() {
 	diaryService := service.NewDiaryService(diaryRepo, planRepo, logger)
 	communityService := service.NewCommunityService(postRepo, logger)
 	statsService := service.NewStatsService(userRepo, plotRepo, planRepo, harvestRepo, diaryRepo, postRepo, logger)
+	adoptionService := service.NewAdoptionApplicationService(adoptionRepo, plotRepo, db, logger)
 
 	// 处理器
 	authHandler := handler.NewAuthHandler(authService)
@@ -82,13 +84,14 @@ func main() {
 	communityHandler := handler.NewCommunityHandler(communityService)
 	auditHandler := handler.NewAuditHandler(auditService)
 	statsHandler := handler.NewStatsHandler(statsService)
+	adoptionHandler := handler.NewAdoptionApplicationHandler(adoptionService, auditService)
 
 	hub := ws.NewHub(logger, cfg.JWTSecret)
 
 	appRouter := router.New(
 		cfg, logger, rdb,
 		authHandler, userHandler, plotHandler, planHandler, harvestHandler,
-		diaryHandler, communityHandler, auditHandler, statsHandler,
+		diaryHandler, communityHandler, auditHandler, statsHandler, adoptionHandler,
 		auditService, hub,
 	)
 	engine := appRouter.Build()

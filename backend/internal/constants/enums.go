@@ -30,6 +30,16 @@ const (
 	PlotStatusHarvested PlotStatus = "harvested" // 已收成待释放
 )
 
+// AdoptionStatus 认养申请状态机：pending -> approved / rejected / withdrawn
+type AdoptionStatus string
+
+const (
+	AdoptionStatusPending   AdoptionStatus = "pending"   // 待审核
+	AdoptionStatusApproved  AdoptionStatus = "approved"  // 已批准
+	AdoptionStatusRejected  AdoptionStatus = "rejected"  // 已拒绝
+	AdoptionStatusWithdrawn AdoptionStatus = "withdrawn" // 已撤回
+)
+
 // SoilType 土壤类型
 type SoilType string
 

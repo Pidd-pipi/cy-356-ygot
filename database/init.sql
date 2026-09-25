@@ -32,6 +32,19 @@ CREATE TABLE IF NOT EXISTS plots (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS adoption_applications (
+    id BIGSERIAL PRIMARY KEY,
+    plot_id BIGINT NOT NULL REFERENCES plots(id),
+    user_id BIGINT NOT NULL REFERENCES users(id),
+    message VARCHAR(500) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'pending',
+    review_note VARCHAR(500),
+    reviewed_by BIGINT REFERENCES users(id),
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS planting_plans (
     id BIGSERIAL PRIMARY KEY,
     plot_id BIGINT NOT NULL REFERENCES plots(id),
@@ -119,6 +132,11 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_plots_status ON plots(status);
+CREATE INDEX IF NOT EXISTS idx_adoption_plot ON adoption_applications(plot_id);
+CREATE INDEX IF NOT EXISTS idx_adoption_user ON adoption_applications(user_id);
+CREATE INDEX IF NOT EXISTS idx_adoption_status ON adoption_applications(status);
+-- 同一居民对同一地块只能保留一份待审申请（部分唯一索引，与 GORM 模型标签一致）
+CREATE UNIQUE INDEX IF NOT EXISTS uni_adoption_pending ON adoption_applications(plot_id, user_id) WHERE status = 'pending';
 CREATE INDEX IF NOT EXISTS idx_plans_user ON planting_plans(user_id);
 CREATE INDEX IF NOT EXISTS idx_plans_status ON planting_plans(status);
 CREATE INDEX IF NOT EXISTS idx_harvest_user ON harvest_records(user_id);

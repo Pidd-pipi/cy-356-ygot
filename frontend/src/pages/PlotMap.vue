@@ -41,11 +41,30 @@
       </el-table-column>
       <el-table-column label="操作" width="220">
         <template #default="{ row }">
-          <el-button v-if="row.status === 'available'" type="success" size="small" @click="adopt(row)">认养</el-button>
+          <el-button v-if="row.status === 'available' && !adoptionStore.pendingPlotIds.has(row.id)" type="success" size="small" @click="openApply(row)">申请认养</el-button>
+          <el-tag v-else-if="row.status === 'available'" type="warning" size="small">申请审核中</el-tag>
           <el-button v-if="canRelease(row)" type="warning" size="small" @click="release(row)">释放</el-button>
         </template>
       </el-table-column>
     </DataTable>
+
+    <el-dialog v-model="applyVisible" title="提交认养申请" width="520px">
+      <el-alert type="info" :closable="false" style="margin-bottom: 12px"
+        title="提交后需管理员审核，审核期间可在“认养申请”页撤回；同一地块只能保留一份待审申请。" />
+      <el-form label-width="90px">
+        <el-form-item label="地块">
+          <span>{{ applyPlot?.code }} {{ applyPlot?.name }}</span>
+        </el-form-item>
+        <el-form-item label="申请留言">
+          <el-input v-model="applyMessage" type="textarea" :rows="3" maxlength="500" show-word-limit
+            placeholder="向管理员说明你的种植计划、时间安排等" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="applyVisible = false">取消</el-button>
+        <el-button type="primary" :loading="applying" @click="submitApply">提交申请</el-button>
+      </template>
+    </el-dialog>
 
     <el-dialog v-model="createVisible" title="新增地块（管理员）" width="520px">
       <el-form :model="createForm" label-width="90px">
@@ -78,6 +97,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { usePlotStore } from '@/stores/plot'
+import { useAdoptionStore } from '@/stores/adoption'
 import { createPlot, type Plot } from '@/api/plot'
 import { useAuth } from '@/hooks/useAuth'
 import { usePagination } from '@/hooks/usePagination'
@@ -87,12 +107,18 @@ import { PlotStatusMeta, SoilTypeText, SunlightText } from '@/constants'
 import { formatArea, clamp } from '@/utils/format'
 
 const store = usePlotStore()
+const adoptionStore = useAdoptionStore()
 const pagination = usePagination()
 const { user, role, isAdmin } = useAuth()
 
 const createVisible = ref(false)
 const creating = ref(false)
 const createForm = reactive({ name: '', code: '', area: 10, soil_type: 'loam', sunlight: 'full', latitude: 31.2304, longitude: 121.4737, description: '' })
+
+const applyVisible = ref(false)
+const applying = ref(false)
+const applyPlot = ref<Plot | null>(null)
+const applyMessage = ref('')
 
 const mapW = 600
 const mapH = 360
@@ -123,14 +149,26 @@ function canRelease(row: Plot) {
   return row.status === 'harvested' && (role.value === 'admin' || row.adopter_id === user.value?.id)
 }
 
-async function adopt(row: Plot) {
-  try {
-    await ElMessageBox.confirm(`确认认养地块 ${row.name}（${row.code}）吗？`, '认养确认', { type: 'success' })
-  } catch {
+function openApply(row: Plot) {
+  applyPlot.value = row
+  applyMessage.value = ''
+  applyVisible.value = true
+}
+
+async function submitApply() {
+  if (!applyPlot.value) return
+  if (!applyMessage.value.trim()) {
+    ElMessage.warning('请填写申请留言，方便管理员审核')
     return
   }
-  await store.adopt(row.id)
-  ElMessage.success('认养成功，开始你的都市农夫之旅')
+  applying.value = true
+  try {
+    await adoptionStore.apply(applyPlot.value.id, applyMessage.value.trim())
+    ElMessage.success('认养申请已提交，请等待管理员审核')
+    applyVisible.value = false
+  } finally {
+    applying.value = false
+  }
 }
 
 async function release(row: Plot) {
@@ -161,7 +199,11 @@ async function submitCreate() {
   }
 }
 
-onMounted(fetch)
+onMounted(() => {
+  fetch()
+  // 拉取我的待审申请，用于“申请审核中”按钮显隐
+  adoptionStore.fetchMine({ page: 1, page_size: 100 }).catch(() => undefined)
+})
 </script>
 
 <style scoped>

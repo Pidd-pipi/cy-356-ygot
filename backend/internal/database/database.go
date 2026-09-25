@@ -21,6 +21,7 @@ import (
 var Models = []interface{}{
 	&model.User{},
 	&model.Plot{},
+	&model.AdoptionApplication{},
 	&model.PlantingPlan{},
 	&model.HarvestRecord{},
 	&model.DiaryEntry{},

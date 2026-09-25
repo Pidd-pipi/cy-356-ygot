@@ -14,6 +14,15 @@ export const PlotStatusMeta: Record<string, { label: string; type: 'success' | '
   harvested: { label: '待释放', type: 'info' }
 }
 
+// 认养申请状态机（与后端 AdoptionStatus / AdoptionStatusTransitions 对应，驱动按钮显隐）
+export type AdoptionStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn'
+export const AdoptionStatusMeta: Record<string, { label: string; type: 'success' | 'warning' | 'info' | 'danger' | 'primary' }> = {
+  pending: { label: '待审核', type: 'warning' },
+  approved: { label: '已批准', type: 'success' },
+  rejected: { label: '已拒绝', type: 'danger' },
+  withdrawn: { label: '已撤回', type: 'info' }
+}
+
 export type PlanStatus = 'planned' | 'planting' | 'growing' | 'harvesting' | 'completed'
 export const PlanStatusMeta: Record<string, { label: string; type: 'success' | 'warning' | 'info' | 'danger' | 'primary' }> = {
   planned: { label: '已计划', type: 'info' },
