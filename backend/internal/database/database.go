@@ -21,6 +21,7 @@ import (
 var Models = []interface{}{
 	&model.User{},
 	&model.Plot{},
+	&model.AdoptionApplication{},
 	&model.PlantingPlan{},
 	&model.HarvestRecord{},
 	&model.DiaryEntry{},
@@ -96,6 +97,16 @@ func Seed(db *gorm.DB, logger *slog.Logger) error {
 	}
 	for i := range seedPlots {
 		if err := db.Create(&seedPlots[i]).Error; err != nil {
+			return err
+		}
+	}
+
+	// 种子认养申请：城市居民小张对空闲地块 P-001 的待审核申请（演示管理员审核流程）
+	seedApplications := []model.AdoptionApplication{
+		{PlotID: seedPlots[0].ID, UserID: seedUsers[2].ID, Message: "想认养这块全日照的地种番茄，周末都能来打理，望批准。", Status: string(constants.ApplicationStatusPending)},
+	}
+	for i := range seedApplications {
+		if err := db.Create(&seedApplications[i]).Error; err != nil {
 			return err
 		}
 	}

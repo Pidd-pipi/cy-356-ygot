@@ -28,11 +28,12 @@ docker compose up -d --build
 
 ## ✨ 主要功能
 
-1. **地块认养与 GIS 展示**：地图展示地块分布，标注空闲/已认养/待释放状态，展示面积、土壤类型、日照条件，在线认养。
-2. **种植计划与作物推荐**：认养后制定种植计划，按季节推荐适宜作物，生成预期收获时间线（蔬菜 45 天/水果 90 天/香草 35 天）。
-3. **种植日记图文记录**：按播种/浇水/施肥/除虫/收成记录种植过程，支持点赞与评论。
-4. **收成预警与采摘提醒**：近 7 天成熟作物自动提醒，记录采摘重量与品质，生成年度收成统计报表。
-5. **农友社区交流**：种植经验 / 病虫害防治 / 食谱创意 / 线下农耕活动四类帖子，实时动态 WebSocket 广播。
+1. **地块认养与 GIS 展示**：地图展示地块分布，标注空闲/已认养/待释放状态，展示面积、土壤类型、日照条件。
+2. **认养申请审核流程**：居民对空闲地块提交认养申请（附留言），待审时可撤回，同一居民对同一地块仅保留一份待审申请；管理员查看申请人和留言后批准其一，地块归该居民认养，同地块其余待审申请自动拒绝，已批准过的地块不能再产生新申请；被拒绝的居民可选择其他空闲地块重新申请。
+3. **种植计划与作物推荐**：认养后制定种植计划，按季节推荐适宜作物，生成预期收获时间线（蔬菜 45 天/水果 90 天/香草 35 天）。
+4. **种植日记图文记录**：按播种/浇水/施肥/除虫/收成记录种植过程，支持点赞与评论。
+5. **收成预警与采摘提醒**：近 7 天成熟作物自动提醒，记录采摘重量与品质，生成年度收成统计报表。
+6. **农友社区交流**：种植经验 / 病虫害防治 / 食谱创意 / 线下农耕活动四类帖子，实时动态 WebSocket 广播。
 
 ## 🛠 技术栈
 
@@ -98,6 +99,7 @@ README.md
 | --- | --- | --- | --- |
 | 用户 User | `users` | `model/user.go`、`repository/user_repository.go`、`service/user_service.go`、`handler/user_handler.go`、`router/user.go` | `api/auth.ts`、`stores/auth.ts`、`pages/Login.vue`、`pages/Register.vue` |
 | 地块 Plot | `plots` | `model/plot.go`、`repository/plot_repository.go`、`service/plot_service.go`、`handler/plot_handler.go`、`router/plot.go` | `api/plot.ts`、`stores/plot.ts`、`pages/PlotMap.vue` |
+| 认养申请 AdoptionApplication | `adoption_applications` | `model/adoption_application.go`、`repository/adoption_application_repository.go`、`service/adoption_application_service.go`、`handler/adoption_application_handler.go`、`router/adoption_application.go` | `api/adoption.ts`、`stores/adoption.ts`、`pages/Adoption.vue` |
 | 种植计划 PlantingPlan | `planting_plans` | `model/planting_plan.go`、`repository/planting_plan_repository.go`、`service/planting_plan_service.go`、`handler/planting_plan_handler.go`、`router/planting_plan.go` | `api/plantingPlan.ts`、`stores/plantingPlan.ts`、`pages/PlantingPlan.vue` |
 | 收成记录 HarvestRecord | `harvest_records` | `model/harvest_record.go`、`repository/harvest_record_repository.go`、`service/harvest_record_service.go`、`handler/harvest_handler.go`、`router/harvest.go` | `api/harvest.ts`、`pages/Harvest.vue` |
 | 种植日记 DiaryEntry | `diary_entries` / `diary_comments` | `model/diary_entry.go`、`repository/diary_entry_repository.go`、`service/diary_service.go`、`handler/diary_handler.go`、`router/diary.go` | `api/diary.ts`、`stores/diary.ts`、`pages/Diary.vue` |
@@ -108,7 +110,7 @@ README.md
 ## 🧭 横切关注点（触达文件层）
 
 1. **JWT 认证 + RBAC 权限**：数据库 `users.role` 角色字段 → `internal/middleware/auth.go`、`internal/middleware/rbac.go`、`internal/util/jwt.go` → 前端 `utils/request.ts`（自动携带 token、401 跳转）、`router/index.ts`（路由守卫）、`hooks/useAuth.ts`（按钮显隐）。
-2. **操作审计日志**：数据库 `audit_logs` 表 → `internal/middleware/audit.go`（写操作自动落库）→ service/handler 埋点（认养/释放/收成/角色变更）→ 前端 `pages/Audit.vue`（管理员查看）。
+2. **操作审计日志**：数据库 `audit_logs` 表 → `internal/middleware/audit.go`（写操作自动落库）→ service/handler 埋点（认养申请提交/撤回/批准/拒绝、地块释放、收成、角色变更）→ 前端 `pages/Audit.vue`（管理员查看）。
 3. **全局错误处理与请求追踪**：`internal/middleware/request_id.go`、`internal/middleware/error_handler.go`、`internal/util/app_error.go`、`internal/constants/error_codes.go` → 前端 `utils/request.ts` 拦截器统一提示。
 
 ## 🧩 共享枚举/常量（后端 `internal/constants/enums.go`，前端 `src/constants/index.ts`）
@@ -116,7 +118,8 @@ README.md
 | 枚举 | 取值 | 后端出现位置 |
 | --- | --- | --- |
 | RoleType 角色 | admin / farmer / citizen | `constants/enums.go`、`model/user.go`、`dto/user_dto.go`、`service/user_service.go`（ChangeRole 校验）、`middleware/rbac.go`、`middleware/audit.go`、`handler/planting_plan_handler.go`、`handler/harvest_handler.go`、`handler/diary_handler.go`、`util/formatters.go`、`log_templates.go`、`error_codes.go`、`database/database.go`（种子数据） |
-| PlotStatus 地块状态 | available / adopted / harvested | `constants/enums.go`、`model/plot.go`、`dto/plot_dto.go`、`service/plot_service.go`（认养/释放状态机）、`repository/plot_repository.go`（过滤）、`util/formatters.go`、`log_templates.go`、`database/database.go`（种子数据）、`api/openapi.yaml` |
+| PlotStatus 地块状态 | available / adopted / harvested | `constants/enums.go`、`model/plot.go`、`dto/plot_dto.go`、`service/plot_service.go`（释放状态机）、`service/adoption_application_service.go`（批准后置为 adopted）、`repository/plot_repository.go`（过滤）、`util/formatters.go`、`log_templates.go`、`database/database.go`（种子数据）、`api/openapi.yaml` |
+| ApplicationStatus 认养申请状态 | pending / approved / rejected / withdrawn | `constants/enums.go`、`model/adoption_application.go`、`dto/adoption_application_dto.go`、`service/adoption_application_service.go`（ApplicationStatusTransitions 状态机）、`repository/adoption_application_repository.go`（待审过滤）、`handler/adoption_application_handler.go`、`util/formatters.go`、`log_templates.go`、`error_codes.go`（CodeApplicationNotPending / CodeDuplicateApplication）、`database/database.go`（种子数据）、前端 `constants/index.ts`（ApplicationStatusMeta 徽标与按钮显隐）、`pages/Adoption.vue`、`pages/PlotMap.vue` |
 | PlanStatus 种植计划状态 | planned / planting / growing / harvesting / completed | `constants/enums.go`、`model/planting_plan.go`、`dto/planting_plan_dto.go`（oneof 校验）、`service/planting_plan_service.go`（PlanStatusTransitions 状态机）、`handler/planting_plan_handler.go`、`util/formatters.go`、`log_templates.go`、`error_codes.go`（CodePlanStateNotAllowed）、`database/database.go`（种子数据）、前端 `constants/index.ts`（PlanStatusMeta / PlanStatusNext 按钮显隐） |
 | CropType 作物类型 | vegetable / fruit / herb | `constants/enums.go`、`model/planting_plan.go`、`dto/planting_plan_dto.go`、`service/planting_plan_service.go`（成熟时间估算）、`util/formatters.go`、`repository/harvest_record_repository.go`（分组统计）、`database/database.go` |
 | Season 季节 | spring / summer / autumn / winter | `constants/enums.go`、`dto/planting_plan_dto.go`、`service/planting_plan_service.go`（SeasonCrops 推荐表）、`util/formatters.go`、`database/database.go`、前端 `pages/PlantingPlan.vue`、`pages/Dashboard.vue` |
@@ -151,8 +154,16 @@ README.md
 | GET | `/plots/:id` | 地块详情 | 公开 |
 | POST | `/plots` | 创建地块 | 管理员 |
 | PUT | `/plots/:id` | 更新地块 | 管理员 |
-| POST | `/plots/:id/adopt` | 认养地块（事务 + FOR UPDATE） | 登录 |
 | POST | `/plots/:id/release` | 释放地块 | 认养人/管理员 |
+
+### 认养申请
+| 方法 | 路径 | 说明 | 鉴权 |
+| --- | --- | --- | --- |
+| GET | `/applications` | 申请列表（居民看自己的审核结果；管理员看全部，`?status=` `?plot_id=` 过滤） | 登录 |
+| POST | `/applications` | 提交认养申请（附留言；同一居民同一地块仅一份待审申请，事务 + FOR UPDATE） | 登录 |
+| POST | `/applications/:id/withdraw` | 撤回申请（仅待审核状态） | 申请人 |
+| POST | `/applications/:id/approve` | 批准申请（地块归申请人，同地块其余待审申请自动拒绝） | 管理员 |
+| POST | `/applications/:id/reject` | 拒绝申请（被拒绝的居民可选择其他空闲地块） | 管理员 |
 
 ### 种植计划
 | 方法 | 路径 | 说明 | 鉴权 |
@@ -206,6 +217,7 @@ README.md
 ### 接口复用说明
 - `GET /stats/annual`（收成统计接口）与 `GET /planting-plans/stats`（种植计划统计）**复用同一个 service 方法** `HarvestRecordService.AnnualStats`。
 - `GET /plots/:id`（地块详情接口）与创建种植计划 `POST /planting-plans` **复用同一个 service 方法** `PlotService.GetByID`。
+- 提交认养申请 `POST /applications` 与批准认养申请 `POST /applications/:id/approve`、释放地块 `POST /plots/:id/release` **复用同一个仓储方法** `PlotRepository.FindByIDForUpdate`（事务内行锁）。
 - 分页 `util.Paginate` 被全部 repository 复用；`ListByUser` 系列仓储方法被计划/收成列表接口复用。
 
 ## 🔌 API 调用示例（curl，含 JWT 请求头）
@@ -222,9 +234,28 @@ curl -s http://localhost:29516/healthz
 # 3. 地块列表
 curl -s http://localhost:29516/api/v1/plots
 
-# 4. 认养地块（登录用户）
-curl -s -X POST http://localhost:29516/api/v1/plots/1/adopt \
+# 4. 提交认养申请（居民，附留言）
+curl -s -X POST http://localhost:29516/api/v1/applications \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"plot_id":1,"message":"想认养这块地种番茄，周末都能来打理"}'
+
+# 4.1 查看我的认养申请 / 审核结果（居民）
+curl -s "http://localhost:29516/api/v1/applications?status=pending" \
   -H "Authorization: Bearer $TOKEN"
+
+# 4.2 撤回待审核的认养申请（申请人）
+curl -s -X POST http://localhost:29516/api/v1/applications/1/withdraw \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4.3 批准认养申请（管理员；同地块其余待审申请自动拒绝）
+curl -s -X POST http://localhost:29516/api/v1/applications/1/approve \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"note":"同意认养"}'
+
+# 4.4 拒绝认养申请（管理员）
+curl -s -X POST http://localhost:29516/api/v1/applications/2/reject \
+  -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"note":"本周名额已满"}'
 
 # 5. 创建种植计划
 curl -s -X POST http://localhost:29516/api/v1/planting-plans \

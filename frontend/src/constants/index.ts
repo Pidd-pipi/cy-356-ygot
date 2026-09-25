@@ -14,6 +14,14 @@ export const PlotStatusMeta: Record<string, { label: string; type: 'success' | '
   harvested: { label: '待释放', type: 'info' }
 }
 
+export type ApplicationStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn'
+export const ApplicationStatusMeta: Record<string, { label: string; type: 'success' | 'warning' | 'info' | 'danger' | 'primary' }> = {
+  pending: { label: '待审核', type: 'warning' },
+  approved: { label: '已批准', type: 'success' },
+  rejected: { label: '已拒绝', type: 'danger' },
+  withdrawn: { label: '已撤回', type: 'info' }
+}
+
 export type PlanStatus = 'planned' | 'planting' | 'growing' | 'harvesting' | 'completed'
 export const PlanStatusMeta: Record<string, { label: string; type: 'success' | 'warning' | 'info' | 'danger' | 'primary' }> = {
   planned: { label: '已计划', type: 'info' },

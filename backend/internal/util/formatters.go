@@ -48,6 +48,22 @@ func PlotStatusText(s string) string {
 	}
 }
 
+// ApplicationStatusText 认养申请状态中文文本。
+func ApplicationStatusText(s string) string {
+	switch constants.ApplicationStatus(s) {
+	case constants.ApplicationStatusPending:
+		return "待审核"
+	case constants.ApplicationStatusApproved:
+		return "已批准"
+	case constants.ApplicationStatusRejected:
+		return "已拒绝"
+	case constants.ApplicationStatusWithdrawn:
+		return "已撤回"
+	default:
+		return "未知状态"
+	}
+}
+
 // PlanStatusText 种植计划状态中文文本。
 func PlanStatusText(s string) string {
 	switch constants.PlanStatus(s) {
